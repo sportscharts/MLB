@@ -1,0 +1,1211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2025 Baseball Stats Explorer</title>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            background: linear-gradient(to bottom right, #f8fafc, #dbeafe);
+            min-height: 100vh;
+            padding: 1rem;
+        }
+        #root { max-width: 1400px; margin: 0 auto; }
+        .tabs {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+        .tab {
+            padding: 0.75rem 1.5rem;
+            background: white;
+            border: none;
+            border-radius: 8px 8px 0 0;
+            font-size: 0.875rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: #6b7280;
+        }
+        .tab.active {
+            background: white;
+            color: #3b82f6;
+            box-shadow: 0 -2px 8px rgba(0,0,0,0.1);
+        }
+        .tab:hover:not(.active) {
+            background: #f3f4f6;
+        }
+        .chart-container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            padding: 1.5rem;
+        }
+        .header-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+        .filters-container {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            align-items: end;
+        }
+        h1 {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #1f2937;
+            margin-bottom: 0.5rem;
+        }
+        .subtitle {
+            font-size: 0.875rem;
+            color: #6b7280;
+        }
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+        label {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: #4b5563;
+            text-transform: uppercase;
+            letter-spacing: 0.025em;
+        }
+        select {
+            padding: 0.5rem;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-size: 0.875rem;
+            background: white;
+            cursor: pointer;
+            min-width: 140px;
+        }
+        select:focus { outline: none; border-color: #3b82f6; }
+        .pa-filter {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .pa-filter select {
+            min-width: 60px;
+        }
+        .pa-filter input {
+            padding: 0.5rem;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-size: 0.875rem;
+            width: 80px;
+        }
+        button {
+            padding: 0.5rem 1rem;
+            background: #ef4444;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        button:hover { background: #dc2626; }
+        .search-container {
+            position: relative;
+            min-width: 200px;
+        }
+        .search-input {
+            width: 100%;
+            padding: 0.5rem 2rem 0.5rem 0.5rem;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-size: 0.875rem;
+            background: white;
+        }
+        .search-input:focus {
+            outline: none;
+            border-color: #3b82f6;
+        }
+        .search-clear {
+            position: absolute;
+            right: 0.5rem;
+            top: 50%;
+            transform: translateY(-50%);
+            background: transparent;
+            padding: 0.25rem;
+            font-size: 1rem;
+            color: #6b7280;
+            min-width: auto;
+        }
+        .search-clear:hover {
+            background: transparent;
+            color: #ef4444;
+        }
+        .search-dropdown {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            margin-top: 0.25rem;
+            max-height: 300px;
+            overflow-y: auto;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            z-index: 1000;
+        }
+        .search-result {
+            padding: 0.75rem;
+            cursor: pointer;
+            border-bottom: 1px solid #f3f4f6;
+            transition: background 0.2s;
+        }
+        .search-result:hover {
+            background: #f3f4f6;
+        }
+        .search-result:last-child {
+            border-bottom: none;
+        }
+        .search-result-name {
+            font-weight: 600;
+            color: #1f2937;
+        }
+        .search-result-info {
+            font-size: 0.75rem;
+            color: #6b7280;
+            margin-top: 0.25rem;
+        }
+        .toggle-container {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 0;
+        }
+        .toggle-container input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+        .toggle-container label {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: #4b5563;
+            text-transform: none;
+            letter-spacing: normal;
+            cursor: pointer;
+            margin: 0;
+        }
+        .chart-wrapper {
+            position: relative;
+            width: 100%;
+            overflow-x: auto;
+        }
+        svg { display: block; }
+        .tooltip {
+            position: fixed;
+            background: rgba(0, 0, 0, 0.9);
+            color: white;
+            padding: 0.75rem;
+            border-radius: 6px;
+            font-size: 0.875rem;
+            pointer-events: none;
+            z-index: 1000;
+            max-width: 250px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+        .tooltip div {
+            margin: 0.25rem 0;
+        }
+        .tooltip-player {
+            font-weight: bold;
+            font-size: 1rem;
+            margin-bottom: 0.5rem;
+        }
+        .source {
+            position: absolute;
+            font-size: 11px;
+            color: #6b7280;
+            bottom: 10px;
+            left: 60px;
+        }
+        .loading {
+            text-align: center;
+            padding: 3rem;
+            color: #6b7280;
+            font-size: 1.125rem;
+        }
+        .error {
+            text-align: center;
+            padding: 3rem;
+            color: #ef4444;
+        }
+        .field-container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            padding: 2rem;
+            position: relative;
+        }
+        .field-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+        .field-svg {
+            width: 100%;
+            max-width: 900px;
+            margin: 0 auto;
+            display: block;
+        }
+        .position-bubble {
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .position-bubble:hover {
+            filter: brightness(1.1);
+        }
+        .field-tooltip {
+            position: fixed;
+            background: rgba(0, 0, 0, 0.95);
+            color: white;
+            padding: 1rem;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            pointer-events: none;
+            z-index: 1000;
+            max-width: 300px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+        .field-tooltip-player {
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid rgba(255,255,255,0.2);
+        }
+        .field-tooltip-list {
+            margin-top: 0.5rem;
+        }
+        .field-tooltip-item {
+            padding: 0.25rem 0;
+            display: flex;
+            justify-content: space-between;
+            gap: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useMemo } = React;
+
+        const POSITION_MAP = {
+            '1': 'P', '2': 'C', '3': '1B', '4': '2B', '5': '3B',
+            '6': 'SS', '7': 'LF', '8': 'CF', '9': 'RF', 'D': 'DH', 'H': 'PH'
+        };
+
+        const FIELD_POSITIONS = {
+            'C': { x: 450, y: 520 },
+            '1B': { x: 620, y: 400 },
+            '2B': { x: 520, y: 320 },
+            'SS': { x: 380, y: 320 },
+            '3B': { x: 280, y: 400 },
+            'LF': { x: 200, y: 200 },
+            'CF': { x: 450, y: 150 },
+            'RF': { x: 700, y: 200 },
+            'DH': { x: 550, y: 560 }
+        };
+
+        function StatsChart() {
+            const [allPlayers, setAllPlayers] = useState([]);
+            const [loading, setLoading] = useState(true);
+            const [error, setError] = useState(null);
+            const [activeTab, setActiveTab] = useState('chart');
+            const [hoveredPlayer, setHoveredPlayer] = useState(null);
+            const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+            const [selectedTeam, setSelectedTeam] = useState('All Teams');
+            const [selectedPosition, setSelectedPosition] = useState('All Positions');
+            const [xStat, setXStat] = useState('oWAR');
+            const [yStat, setYStat] = useState('dWAR');
+            const [paOperator, setPaOperator] = useState('>=');
+            const [paValue, setPaValue] = useState('');
+            const [fieldStat, setFieldStat] = useState('WAR');
+            const [hoveredFieldPosition, setHoveredFieldPosition] = useState(null);
+            const [fieldPaOperator, setFieldPaOperator] = useState('>=');
+            const [fieldPaValue, setFieldPaValue] = useState('');
+            const [searchQuery, setSearchQuery] = useState('');
+            const [searchResults, setSearchResults] = useState([]);
+            const [selectedPlayer, setSelectedPlayer] = useState(null);
+            const [showSearchDropdown, setShowSearchDropdown] = useState(false);
+            const [showDataLabels, setShowDataLabels] = useState(false);
+            const [teamSearchQuery, setTeamSearchQuery] = useState('');
+            const [teamSearchResults, setTeamSearchResults] = useState([]);
+            const [selectedTeamSearch, setSelectedTeamSearch] = useState(null);
+            const [showTeamSearchDropdown, setShowTeamSearchDropdown] = useState(false);
+
+            const formatStatValue = (stat, value, forAxis = false) => {
+                if (typeof value !== 'number') return value;
+                if (['BA', 'OBP', 'SLG', 'OPS'].includes(stat)) {
+                    return value.toFixed(3);
+                }
+                // Format percentage stats - add % only for display, not for axes
+                if (['HR%', 'SB%', 'BB%', 'SO%', 'O-Swing%', 'Z-Swing%', 'Swing%', 'O-Contact%', 'Z-Contact%', 'Contact%', 'Zone%', 'Barrel%', 'HardHit%'].includes(stat)) {
+                    return forAxis ? value.toFixed(1) : value.toFixed(1) + '%';
+                }
+                if (['G', 'PA', 'AB', 'R', 'H', '2B', '3B', 'HR', 'RBI', 'OPS+', 'SB', 'BB', 'SO'].includes(stat)) {
+                    return Math.round(value);
+                }
+                return value.toFixed(1);
+            };
+
+            const parsePositions = (posStr) => {
+                if (!posStr || typeof posStr !== 'string') return [];
+                return posStr.split(',').map(pos => pos.trim()).filter(pos => pos.length > 0);
+            };
+
+            const parseTeams = (teamStr) => {
+                if (!teamStr || typeof teamStr !== 'string') return [];
+                return teamStr.split(',').map(t => t.trim());
+            };
+
+            useEffect(() => {
+                const sheetId = '1Ffs8hiKfEz9ippfr-yxkN62_i8tflHKaOElIAE26SGc';
+                const gid = '0';
+                const csvUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&gid=${gid}`;
+
+                Papa.parse(csvUrl, {
+                    download: true,
+                    header: true,
+                    dynamicTyping: true,
+                    skipEmptyLines: true,
+                    complete: (results) => {
+                        console.log('Loaded players:', results.data.length);
+                        
+                        // Convert percentage strings to numbers
+                        const percentageColumns = ['HR%', 'SB%', 'BB%', 'SO%', 'O-Swing%', 'Z-Swing%', 'Swing%', 'O-Contact%', 'Z-Contact%', 'Contact%', 'Zone%'];
+                        const decimalPercentageColumns = ['Barrel%', 'HardHit%'];
+                        
+                        const processedData = results.data.map(player => {
+                            const processed = { ...player };
+                            
+                            // Convert string percentages (like "15.2%") to numbers
+                            percentageColumns.forEach(col => {
+                                if (typeof processed[col] === 'string') {
+                                    const numValue = parseFloat(processed[col].replace('%', ''));
+                                    processed[col] = numValue;
+                                }
+                            });
+                            
+                            // Convert decimal percentages (like 0.011) to percentages (multiply by 100)
+                            decimalPercentageColumns.forEach(col => {
+                                if (typeof processed[col] === 'number' && processed[col] !== 0) {
+                                    processed[col] = processed[col] * 100;
+                                }
+                            });
+                            
+                            // Convert 0 to null for Barrel% and HardHit% to exclude from charts
+                            if (processed['Barrel%'] === 0) processed['Barrel%'] = null;
+                            if (processed['HardHit%'] === 0) processed['HardHit%'] = null;
+                            
+                            return processed;
+                        });
+                        
+                        console.log('Sample row after processing:', processedData[0]);
+                        console.log('HR% type:', typeof processedData[0]['HR%'], 'value:', processedData[0]['HR%']);
+                        console.log('BB% type:', typeof processedData[0]['BB%'], 'value:', processedData[0]['BB%']);
+                        console.log('Column names:', Object.keys(processedData[0]));
+                        setAllPlayers(processedData);
+                        setLoading(false);
+                    },
+                    error: (err) => {
+                        console.error('Error loading data:', err);
+                        setError('Failed to load data');
+                        setLoading(false);
+                    }
+                });
+            }, []);
+
+            useEffect(() => {
+                if (searchQuery.trim() === '') {
+                    setSearchResults([]);
+                    setShowSearchDropdown(false);
+                    return;
+                }
+
+                const query = searchQuery.toLowerCase();
+                const results = allPlayers
+                    .filter(player => 
+                        player.Player && player.Player.toLowerCase().includes(query)
+                    )
+                    .slice(0, 10);
+                
+                setSearchResults(results);
+                setShowSearchDropdown(true);
+            }, [searchQuery, allPlayers]);
+
+            useEffect(() => {
+                if (teamSearchQuery.trim() === '') {
+                    setTeamSearchResults([]);
+                    setShowTeamSearchDropdown(false);
+                    return;
+                }
+
+                const query = teamSearchQuery.toLowerCase();
+                const uniqueTeams = Array.from(new Set(
+                    allPlayers.flatMap(p => parseTeams(p.Team))
+                ));
+                const results = uniqueTeams
+                    .filter(team => team.toLowerCase().includes(query))
+                    .slice(0, 10);
+                
+                setTeamSearchResults(results);
+                setShowTeamSearchDropdown(true);
+            }, [teamSearchQuery, allPlayers]);
+
+            const statOptions = useMemo(() => {
+                if (allPlayers.length === 0) return [];
+                const firstPlayer = allPlayers[0];
+                
+                // Define categories based on the mapping sheet
+                const categories = {
+                    'Standard': ['WAR', 'G', 'PA', 'AB', 'R', 'H', '2B', '3B', 'HR', 'HR%', 'RBI', 'SB', 'CS', 'SB%', 'BB', 'BB%', 'SO', 'SO%', 'BA', 'OBP', 'SLG', 'OPS', 'OPS+', 'TB', 'oWAR', 'dWAR'],
+                    'Plate Discipline': ['O-Swing%', 'Z-Swing%', 'Swing%', 'O-Contact%', 'Z-Contact%', 'Contact%', 'Zone%'],
+                    'Statcast': ['Exit Velocity', 'Max Exit Velocity', 'Launch Angle', 'Barrel%', 'HardHit%']
+                };
+                
+                // Create grouped options with only available stats
+                const grouped = [];
+                Object.entries(categories).forEach(([category, stats]) => {
+                    const availableStats = stats.filter(stat => typeof firstPlayer[stat] === 'number');
+                    if (availableStats.length > 0) {
+                        grouped.push({ category, stats: availableStats });
+                    }
+                });
+                
+                return grouped;
+            }, [allPlayers]);
+
+            const fieldStatOptions = useMemo(() => {
+                if (allPlayers.length === 0) return [];
+                const firstPlayer = allPlayers[0];
+                
+                // Define categories based on the mapping sheet
+                const categories = {
+                    'Standard': ['WAR', 'G', 'PA', 'AB', 'R', 'H', '2B', '3B', 'HR', 'HR%', 'RBI', 'SB', 'CS', 'SB%', 'BB', 'BB%', 'SO', 'SO%', 'BA', 'OBP', 'SLG', 'OPS', 'OPS+', 'TB', 'oWAR', 'dWAR'],
+                    'Plate Discipline': ['O-Swing%', 'Z-Swing%', 'Swing%', 'O-Contact%', 'Z-Contact%', 'Contact%', 'Zone%'],
+                    'Statcast': ['Exit Velocity', 'Max Exit Velocity', 'Launch Angle', 'Barrel%', 'HardHit%']
+                };
+                
+                // Create grouped options with only available stats
+                const grouped = [];
+                Object.entries(categories).forEach(([category, stats]) => {
+                    const availableStats = stats.filter(stat => typeof firstPlayer[stat] === 'number');
+                    if (availableStats.length > 0) {
+                        grouped.push({ category, stats: availableStats });
+                    }
+                });
+                
+                return grouped;
+            }, [allPlayers]);
+
+            const topPlayersByPosition = useMemo(() => {
+                const positionLeaders = {};
+                
+                Object.keys(FIELD_POSITIONS).forEach(position => {
+                    let playersAtPosition = allPlayers.filter(player => {
+                        const positions = parsePositions(player.Position);
+                        return positions.includes(position);
+                    });
+                    
+                    if (fieldPaValue !== '') {
+                        playersAtPosition = playersAtPosition.filter(player => {
+                            const pa = player.PA || 0;
+                            const threshold = Number(fieldPaValue);
+                            if (fieldPaOperator === '>=' && pa < threshold) return false;
+                            if (fieldPaOperator === '<=' && pa > threshold) return false;
+                            if (fieldPaOperator === '=' && pa !== threshold) return false;
+                            return true;
+                        });
+                    }
+                    
+                    const sorted = playersAtPosition
+                        .filter(p => typeof p[fieldStat] === 'number')
+                        .sort((a, b) => (b[fieldStat] || 0) - (a[fieldStat] || 0))
+                        .slice(0, 5);
+                    
+                    positionLeaders[position] = sorted;
+                });
+                
+                return positionLeaders;
+            }, [allPlayers, fieldStat, fieldPaOperator, fieldPaValue]);
+
+            const teams = useMemo(() => {
+                const teamSet = new Set();
+                allPlayers.forEach(p => {
+                    const playerTeams = parseTeams(p.Team);
+                    playerTeams.forEach(t => teamSet.add(t));
+                });
+                return ['All Teams', ...Array.from(teamSet).sort()];
+            }, [allPlayers]);
+
+            const positions = useMemo(() => {
+                const posSet = new Set();
+                allPlayers.forEach(p => {
+                    const playerPositions = parsePositions(p.Position);
+                    playerPositions.forEach(pos => posSet.add(pos));
+                });
+                const positionOrder = ['C', '1B', '2B', 'SS', '3B', 'LF', 'CF', 'RF', 'DH'];
+                const sortedPositions = Array.from(posSet).sort((a, b) => {
+                    const indexA = positionOrder.indexOf(a);
+                    const indexB = positionOrder.indexOf(b);
+                    if (indexA === -1 && indexB === -1) return a.localeCompare(b);
+                    if (indexA === -1) return 1;
+                    if (indexB === -1) return -1;
+                    return indexA - indexB;
+                });
+                return ['All Positions', ...sortedPositions];
+            }, [allPlayers]);
+
+            const filteredPlayers = useMemo(() => {
+                return allPlayers.filter(player => {
+                    if (paValue !== '') {
+                        const pa = player.PA || 0;
+                        const threshold = Number(paValue);
+                        if (paOperator === '>=' && pa < threshold) return false;
+                        if (paOperator === '<=' && pa > threshold) return false;
+                        if (paOperator === '=' && pa !== threshold) return false;
+                    }
+
+                    if (selectedTeam !== 'All Teams') {
+                        const playerTeams = parseTeams(player.Team);
+                        if (!playerTeams.includes(selectedTeam)) return false;
+                    }
+
+                    if (selectedPosition !== 'All Positions') {
+                        const playerPositions = parsePositions(player.Position);
+                        if (!playerPositions.includes(selectedPosition)) return false;
+                    }
+                    
+                    // Filter out players with null values for the selected stats
+                    if (player[xStat] === null || player[yStat] === null) return false;
+
+                    return true;
+                });
+            }, [allPlayers, selectedTeam, selectedPosition, paOperator, paValue, xStat, yStat]);
+
+            const { xExtent, yExtent } = useMemo(() => {
+                if (filteredPlayers.length === 0) return { xExtent: [0, 10], yExtent: [-2, 3] };
+                
+                const xValues = filteredPlayers.map(p => p[xStat]).filter(v => typeof v === 'number' && !isNaN(v));
+                const yValues = filteredPlayers.map(p => p[yStat]).filter(v => typeof v === 'number' && !isNaN(v));
+                
+                if (xValues.length === 0 || yValues.length === 0) {
+                    console.log(`No valid data for ${xStat} or ${yStat}`);
+                    return { xExtent: [0, 10], yExtent: [-2, 3] };
+                }
+                
+                const xMin = Math.min(...xValues);
+                const xMax = Math.max(...xValues);
+                const yMin = Math.min(...yValues);
+                const yMax = Math.max(...yValues);
+                
+                const xPadding = (xMax - xMin) * 0.1 || 1;
+                const yPadding = (yMax - yMin) * 0.1 || 1;
+                
+                return {
+                    xExtent: [xMin - xPadding, xMax + xPadding],
+                    yExtent: [yMin - yPadding, yMax + yPadding]
+                };
+            }, [filteredPlayers, xStat, yStat]);
+
+            const resetFilters = () => {
+                setSelectedTeam('All Teams');
+                setSelectedPosition('All Positions');
+                setXStat('oWAR');
+                setYStat('dWAR');
+                setPaOperator('>=');
+                setPaValue('');
+                setSelectedPlayer(null);
+                setSearchQuery('');
+                setSelectedTeamSearch(null);
+                setTeamSearchQuery('');
+            };
+
+            const handleSelectPlayer = (player) => {
+                setSelectedPlayer(player);
+                setSearchQuery(player.Player);
+                setShowSearchDropdown(false);
+            };
+
+            const handleClearSearch = () => {
+                setSelectedPlayer(null);
+                setSearchQuery('');
+                setShowSearchDropdown(false);
+            };
+
+            const handleSelectTeam = (team) => {
+                setSelectedTeamSearch(team);
+                setTeamSearchQuery(team);
+                setShowTeamSearchDropdown(false);
+                // Clear player search when team is selected
+                setSelectedPlayer(null);
+                setSearchQuery('');
+            };
+
+            const handleClearTeamSearch = () => {
+                setSelectedTeamSearch(null);
+                setTeamSearchQuery('');
+                setShowTeamSearchDropdown(false);
+            };
+
+            if (loading) return <div className="loading">Loading data...</div>;
+            if (error) return <div className="error">{error}</div>;
+
+            const renderChartTab = () => {
+                const width = 1100;
+                const height = 700;
+                const margin = { top: 40, right: 40, bottom: 60, left: 60 };
+                const innerWidth = width - margin.left - margin.right;
+                const innerHeight = height - margin.top - margin.bottom;
+
+                const xScale = (value) => {
+                    return margin.left + ((value - xExtent[0]) / (xExtent[1] - xExtent[0])) * innerWidth;
+                };
+
+                const yScale = (value) => {
+                    return margin.top + innerHeight - ((value - yExtent[0]) / (yExtent[1] - yExtent[0])) * innerHeight;
+                };
+
+                const sizeScale = (war) => {
+                    const maxWar = Math.max(...allPlayers.map(p => p.WAR || 0));
+                    return 3 + (war / maxWar) * 17;
+                };
+
+                const xTicks = [];
+                const xStep = (xExtent[1] - xExtent[0]) / 8;
+                for (let i = 0; i <= 8; i++) {
+                    xTicks.push(xExtent[0] + xStep * i);
+                }
+
+                const yTicks = [];
+                const yStep = (yExtent[1] - yExtent[0]) / 8;
+                for (let i = 0; i <= 8; i++) {
+                    yTicks.push(yExtent[0] + yStep * i);
+                }
+
+                return (
+                <div className="chart-container">
+                    <div className="header-row">
+                        <div>
+                            <h1>2025 Baseball Stats Explorer</h1>
+                            <p className="subtitle">Interactive player statistics (bubble size = total WAR)</p>
+                        </div>
+                        <div className="filters-container">
+                            <div className="filter-group">
+                                <label>X-Axis</label>
+                                <select value={xStat} onChange={(e) => setXStat(e.target.value)}>
+                                    {statOptions.map(group => (
+                                        <optgroup key={group.category} label={group.category}>
+                                            {group.stats.map(stat => (
+                                                <option key={stat} value={stat}>{stat}</option>
+                                            ))}
+                                        </optgroup>
+                                    ))}
+                                </select>
+                            </div>
+                            <div className="filter-group">
+                                <label>Y-Axis</label>
+                                <select value={yStat} onChange={(e) => setYStat(e.target.value)}>
+                                    {statOptions.map(group => (
+                                        <optgroup key={group.category} label={group.category}>
+                                            {group.stats.map(stat => (
+                                                <option key={stat} value={stat}>{stat}</option>
+                                            ))}
+                                        </optgroup>
+                                    ))}
+                                </select>
+                            </div>
+                            <div className="filter-group">
+                                <label>Position</label>
+                                <select value={selectedPosition} onChange={(e) => setSelectedPosition(e.target.value)}>
+                                    {positions.map(pos => (
+                                        <option key={pos} value={pos}>{pos}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div className="filter-group">
+                                <label>Min PA</label>
+                                <div className="pa-filter">
+                                    <select value={paOperator} onChange={(e) => setPaOperator(e.target.value)}>
+                                        <option value=">=">≥</option>
+                                        <option value="<=">≤</option>
+                                        <option value="=">=</option>
+                                    </select>
+                                    <input 
+                                        type="number" 
+                                        value={paValue}
+                                        onChange={(e) => setPaValue(e.target.value)}
+                                        placeholder="PA"
+                                    />
+                                </div>
+                            </div>
+                            <div className="filter-group">
+                                <label>Search Player</label>
+                                <div className="search-container">
+                                    <input
+                                        type="text"
+                                        className="search-input"
+                                        placeholder="Search..."
+                                        value={searchQuery}
+                                        onChange={(e) => setSearchQuery(e.target.value)}
+                                        onFocus={() => searchQuery && setShowSearchDropdown(true)}
+                                    />
+                                    {searchQuery && (
+                                        <button 
+                                            className="search-clear"
+                                            onClick={handleClearSearch}
+                                        >
+                                            ×
+                                        </button>
+                                    )}
+                                    {showSearchDropdown && searchResults.length > 0 && (
+                                        <div className="search-dropdown">
+                                            {searchResults.map((player, idx) => (
+                                                <div
+                                                    key={idx}
+                                                    className="search-result"
+                                                    onClick={() => handleSelectPlayer(player)}
+                                                >
+                                                    <div className="search-result-name">{player.Player}</div>
+                                                    <div className="search-result-info">
+                                                        {player.Team} • {player.Position} • WAR: {formatStatValue('WAR', player.WAR, false)}
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                            <div className="filter-group">
+                                <label>Team Search</label>
+                                <div className="search-container">
+                                    <input
+                                        type="text"
+                                        className="search-input"
+                                        placeholder="Search teams..."
+                                        value={teamSearchQuery}
+                                        onChange={(e) => setTeamSearchQuery(e.target.value)}
+                                        onFocus={() => teamSearchQuery && setShowTeamSearchDropdown(true)}
+                                    />
+                                    {teamSearchQuery && (
+                                        <button 
+                                            className="search-clear"
+                                            onClick={handleClearTeamSearch}
+                                        >
+                                            ×
+                                        </button>
+                                    )}
+                                    {showTeamSearchDropdown && teamSearchResults.length > 0 && (
+                                        <div className="search-dropdown">
+                                            {teamSearchResults.map((team, idx) => {
+                                                const playersCount = allPlayers.filter(p => 
+                                                    parseTeams(p.Team).includes(team)
+                                                ).length;
+                                                return (
+                                                    <div
+                                                        key={idx}
+                                                        className="search-result"
+                                                        onClick={() => handleSelectTeam(team)}
+                                                    >
+                                                        <div className="search-result-name">{team}</div>
+                                                        <div className="search-result-info">
+                                                            {playersCount} players
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                            <div className="filter-group">
+                                <label style={{ visibility: 'hidden' }}>Toggle</label>
+                                <div className="toggle-container">
+                                    <input 
+                                        type="checkbox" 
+                                        id="showLabels"
+                                        checked={showDataLabels}
+                                        onChange={(e) => setShowDataLabels(e.target.checked)}
+                                    />
+                                    <label htmlFor="showLabels">Show Data Labels</label>
+                                </div>
+                            </div>
+                            <button onClick={resetFilters}>Reset</button>
+                        </div>
+                    </div>
+
+                    <div className="chart-wrapper">
+                        <svg 
+                            width={width} 
+                            height={height}
+                            onMouseMove={(e) => setMousePos({ x: e.clientX, y: e.clientY })}
+                        >
+                            {xTicks.map(tick => (
+                                <line
+                                    key={`x-grid-${tick}`}
+                                    x1={xScale(tick)}
+                                    y1={margin.top}
+                                    x2={xScale(tick)}
+                                    y2={height - margin.bottom}
+                                    stroke="#e5e7eb"
+                                    strokeWidth="1"
+                                />
+                            ))}
+                            {yTicks.map(tick => (
+                                <line
+                                    key={`y-grid-${tick}`}
+                                    x1={margin.left}
+                                    y1={yScale(tick)}
+                                    x2={width - margin.right}
+                                    y2={yScale(tick)}
+                                    stroke="#e5e7eb"
+                                    strokeWidth="1"
+                                />
+                            ))}
+
+                            <line
+                                x1={margin.left}
+                                y1={height - margin.bottom}
+                                x2={width - margin.right}
+                                y2={height - margin.bottom}
+                                stroke="#374151"
+                                strokeWidth="2"
+                            />
+                            <line
+                                x1={margin.left}
+                                y1={margin.top}
+                                x2={margin.left}
+                                y2={height - margin.bottom}
+                                stroke="#374151"
+                                strokeWidth="2"
+                            />
+
+                            {xTicks.map(tick => (
+                                <g key={`x-tick-${tick}`}>
+                                    <line
+                                        x1={xScale(tick)}
+                                        y1={height - margin.bottom}
+                                        x2={xScale(tick)}
+                                        y2={height - margin.bottom + 6}
+                                        stroke="#374151"
+                                        strokeWidth="2"
+                                    />
+                                    <text
+                                        x={xScale(tick)}
+                                        y={height - margin.bottom + 20}
+                                        textAnchor="middle"
+                                        fontSize="12"
+                                        fill="#6b7280"
+                                    >
+                                        {formatStatValue(xStat, tick, true)}
+                                    </text>
+                                </g>
+                            ))}
+
+                            {yTicks.map(tick => (
+                                <g key={`y-tick-${tick}`}>
+                                    <line
+                                        x1={margin.left - 6}
+                                        y1={yScale(tick)}
+                                        x2={margin.left}
+                                        y2={yScale(tick)}
+                                        stroke="#374151"
+                                        strokeWidth="2"
+                                    />
+                                    <text
+                                        x={margin.left - 10}
+                                        y={yScale(tick)}
+                                        textAnchor="end"
+                                        dominantBaseline="middle"
+                                        fontSize="12"
+                                        fill="#6b7280"
+                                    >
+                                        {formatStatValue(yStat, tick, true)}
+                                    </text>
+                                </g>
+                            ))}
+
+                            <text
+                                x={width / 2}
+                                y={height - 10}
+                                textAnchor="middle"
+                                fontSize="14"
+                                fontWeight="600"
+                                fill="#374151"
+                            >
+                                {xStat}
+                            </text>
+                            <text
+                                x={-height / 2}
+                                y={15}
+                                textAnchor="middle"
+                                fontSize="14"
+                                fontWeight="600"
+                                fill="#374151"
+                                transform={`rotate(-90)`}
+                            >
+                                {yStat}
+                            </text>
+
+                            {filteredPlayers.map((player, i) => {
+                                const x = xScale(player[xStat] || 0);
+                                const y = yScale(player[yStat] || 0);
+                                const r = sizeScale(player.WAR || 0);
+                                
+                                const isSelectedPlayer = selectedPlayer && selectedPlayer.Player === player.Player;
+                                const playerTeams = parseTeams(player.Team);
+                                const isSelectedTeam = selectedTeamSearch && playerTeams.includes(selectedTeamSearch);
+                                const isHighlighted = isSelectedPlayer || isSelectedTeam;
+                                
+                                const bubbleColor = isHighlighted ? '#fbbf24' : '#3b82f6';
+                                const bubbleOpacity = (selectedPlayer || selectedTeamSearch) && !isHighlighted ? 0.3 : 0.6;
+                                const strokeWidth = isHighlighted ? 3 : 1;
+                                const strokeColor = isHighlighted ? '#f59e0b' : '#2563eb';
+                                
+                                return (
+                                    <g key={i}>
+                                        <circle
+                                            cx={x}
+                                            cy={y}
+                                            r={r}
+                                            fill={bubbleColor}
+                                            fillOpacity={bubbleOpacity}
+                                            stroke={strokeColor}
+                                            strokeWidth={strokeWidth}
+                                            onMouseEnter={() => setHoveredPlayer(player)}
+                                            onMouseLeave={() => setHoveredPlayer(null)}
+                                            style={{ cursor: 'pointer' }}
+                                        />
+                                        {(showDataLabels || isHighlighted) && (
+                                            <text
+                                                x={x}
+                                                y={y - r - 8}
+                                                textAnchor="middle"
+                                                fontSize="12"
+                                                fontWeight="600"
+                                                fill={isHighlighted ? '#92400e' : '#374151'}
+                                            >
+                                                {player.Player}
+                                            </text>
+                                        )}
+                                    </g>
+                                );
+                            })}
+                        </svg>
+
+                        {hoveredPlayer && (
+                            <div 
+                                className="tooltip"
+                                style={{ 
+                                    left: mousePos.x + 15,
+                                    top: mousePos.y - 15
+                                }}
+                            >
+                                <div className="tooltip-player">{hoveredPlayer.Player}</div>
+                                <div>Team: {hoveredPlayer.Team}</div>
+                                <div>Position: {hoveredPlayer.Position}</div>
+                                <div>Total WAR: {formatStatValue('WAR', hoveredPlayer.WAR || 0)}</div>
+                                <div>{xStat}: {formatStatValue(xStat, hoveredPlayer[xStat] || 0)}</div>
+                                <div>{yStat}: {formatStatValue(yStat, hoveredPlayer[yStat] || 0)}</div>
+                                <div>PA: {formatStatValue('PA', hoveredPlayer.PA || 0)}</div>
+                            </div>
+                        )}
+                        
+                        <div className="source">
+                            Source: Baseball Reference
+                        </div>
+                    </div>
+                </div>
+                );
+            };
+
+            const renderFieldTab = () => {
+                return (
+                    <div className="field-container">
+                        <div className="field-header">
+                            <div>
+                                <h1>Position Leaders</h1>
+                                <p className="subtitle">Top player at each position by selected stat</p>
+                            </div>
+                            <div style={{ display: 'flex', gap: '1rem', alignItems: 'end' }}>
+                                <div className="filter-group">
+                                    <label>Stat</label>
+                                    <select value={fieldStat} onChange={(e) => setFieldStat(e.target.value)}>
+                                        {fieldStatOptions.map(group => (
+                                            <optgroup key={group.category} label={group.category}>
+                                                {group.stats.map(stat => (
+                                                    <option key={stat} value={stat}>{stat}</option>
+                                                ))}
+                                            </optgroup>
+                                        ))}
+                                    </select>
+                                </div>
+                                <div className="filter-group">
+                                    <label>Min PA</label>
+                                    <div className="pa-filter">
+                                        <select value={fieldPaOperator} onChange={(e) => setFieldPaOperator(e.target.value)}>
+                                            <option value=">=">≥</option>
+                                            <option value="<=">≤</option>
+                                            <option value="=">=</option>
+                                        </select>
+                                        <input 
+                                            type="number" 
+                                            value={fieldPaValue}
+                                            onChange={(e) => setFieldPaValue(e.target.value)}
+                                            placeholder="PA"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <svg 
+                            className="field-svg" 
+                            viewBox="0 0 900 600"
+                            onMouseMove={(e) => setMousePos({ x: e.clientX, y: e.clientY })}
+                        >
+                            <path
+                                d="M 450 550 L 150 250 L 450 50 L 750 250 Z"
+                                fill="#2d5016"
+                                opacity="0.3"
+                            />
+                            <path
+                                d="M 450 550 L 250 350 L 450 200 L 650 350 Z"
+                                fill="#8b4513"
+                                opacity="0.2"
+                            />
+                            
+                            {Object.entries(FIELD_POSITIONS).map(([position, coords]) => {
+                                const topPlayers = topPlayersByPosition[position] || [];
+                                const topPlayer = topPlayers[0];
+                                
+                                if (!topPlayer) return null;
+                                
+                                const statValue = topPlayer[fieldStat] || 0;
+                                const radius = 35;
+                                
+                                return (
+                                    <g key={position}>
+                                        <text
+                                            x={coords.x}
+                                            y={coords.y - radius - 35}
+                                            textAnchor="middle"
+                                            fontSize="14"
+                                            fontWeight="600"
+                                            fill="#374151"
+                                        >
+                                            {topPlayer.Player}
+                                        </text>
+                                        <text
+                                            x={coords.x}
+                                            y={coords.y - radius - 20}
+                                            textAnchor="middle"
+                                            fontSize="18"
+                                            fontWeight="bold"
+                                            fill="#1f2937"
+                                        >
+                                            {formatStatValue(fieldStat, statValue)}
+                                        </text>
+                                        
+                                        <circle
+                                            className="position-bubble"
+                                            cx={coords.x}
+                                            cy={coords.y}
+                                            r={radius}
+                                            fill="#3b82f6"
+                                            fillOpacity="0.7"
+                                            stroke="#2563eb"
+                                            strokeWidth="3"
+                                            onMouseEnter={() => setHoveredFieldPosition(position)}
+                                            onMouseLeave={() => setHoveredFieldPosition(null)}
+                                        />
+                                        
+                                        <text
+                                            x={coords.x}
+                                            y={coords.y + 5}
+                                            textAnchor="middle"
+                                            fontSize="16"
+                                            fontWeight="bold"
+                                            fill="white"
+                                            pointerEvents="none"
+                                        >
+                                            {position}
+                                        </text>
+                                    </g>
+                                );
+                            })}
+                        </svg>
+
+                        {hoveredFieldPosition && topPlayersByPosition[hoveredFieldPosition] && (
+                            <div 
+                                className="field-tooltip"
+                                style={{ 
+                                    left: mousePos.x + 15,
+                                    top: mousePos.y - 15
+                                }}
+                            >
+                                <div className="field-tooltip-player">
+                                    Top 5 {hoveredFieldPosition} - {fieldStat}
+                                </div>
+                                <div className="field-tooltip-list">
+                                    {topPlayersByPosition[hoveredFieldPosition].map((player, idx) => (
+                                        <div key={idx} className="field-tooltip-item">
+                                            <span>{idx + 1}. {player.Player}</span>
+                                            <span>{formatStatValue(fieldStat, player[fieldStat])}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                );
+            };
+
+            return (
+                <div>
+                    <div className="tabs">
+                        <button 
+                            className={`tab ${activeTab === 'chart' ? 'active' : ''}`}
+                            onClick={() => setActiveTab('chart')}
+                        >
+                            Bubble Chart
+                        </button>
+                        <button 
+                            className={`tab ${activeTab === 'field' ? 'active' : ''}`}
+                            onClick={() => setActiveTab('field')}
+                        >
+                            Position Leaders
+                        </button>
+                    </div>
+                    
+                    {activeTab === 'chart' ? renderChartTab() : renderFieldTab()}
+                </div>
+            );
+        }
+
+        ReactDOM.render(<StatsChart />, document.getElementById('root'));
+    </script>
+</body>
+</html>
