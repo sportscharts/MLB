@@ -341,14 +341,14 @@
             const [yStat, setYStat] = useState('dWAR');
             const [bubbleSizeStat, setBubbleSizeStat] = useState('WAR');
             const [paOperator, setPaOperator] = useState('>=');
-            const [paValue, setPaValue] = useState('50');
+            const [paValue, setPaValue] = useState('150');
             const [fieldStat, setFieldStat] = useState('WAR');
             const [fieldSeason, setFieldSeason] = useState('2026');
             const [hoveredFieldPosition, setHoveredFieldPosition] = useState(null);
             const [fieldPaOperator, setFieldPaOperator] = useState('>=');
-            const [fieldPaValue, setFieldPaValue] = useState('50');
+            const [fieldPaValue, setFieldPaValue] = useState('150');
             const [risersFallersStat, setRisersFallersStat] = useState('OPS');
-            const [risersFallersPaValue, setRisersFallersPaValue] = useState('50');
+            const [risersFallersPaValue, setRisersFallersPaValue] = useState('150');
             const [risersFallers2025PaValue, setRisersFallers2025PaValue] = useState('200');
             const [selectedRiserFaller, setSelectedRiserFaller] = useState(null);
             const [playerSearch, setPlayerSearch] = useState('');
@@ -361,7 +361,11 @@
             const formatStatValue = (stat, value, forAxis = false) => {
                 if (typeof value !== 'number') return value;
                 if (['BA', 'OBP', 'SLG', 'OPS', 'xBA', 'xSLG'].includes(stat)) {
-                    return value.toFixed(3);
+                    const formatted = value.toFixed(3);
+                    if (['BA', 'OBP', 'SLG', 'OPS'].includes(stat)) {
+                        return formatted.replace(/^-?0\./, (m) => m.startsWith('-') ? '-.' : '.');
+                    }
+                    return formatted;
                 }
                 // Format percentage stats - add % only for display, not for axes
                 if (['HR%', 'SB%', 'BB%', 'SO%', 'O-Swing%', 'Z-Swing%', 'Swing%', 'O-Contact%', 'Z-Contact%', 'Contact%', 'Zone%', 'Barrel%', 'HardHit%'].includes(stat)) {
@@ -733,7 +737,7 @@
                 setYStat('dWAR');
                 setBubbleSizeStat('WAR');
                 setPaOperator('>=');
-                setPaValue('50');
+                setPaValue('150');
                 setPlayerSearch('');
                 setSelectedPlayer(null);
             };
