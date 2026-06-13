@@ -1553,8 +1553,8 @@
                         <div className="rf-grid">
                             {/* Risers Column */}
                             <div>
-                                <h2 style={{ fontSize: '1.25rem', fontWeight: 'bold', color: '#059669', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                    <span style={{ fontSize: '1.5rem' }}>📈</span> Biggest Risers
+                                <h2 style={{ fontSize: '1.25rem', fontWeight: 'bold', color: risersFallersStat === 'SO%' ? '#dc2626' : '#059669', marginBottom: '1rem' }}>
+                                    Biggest Risers
                                 </h2>
                                 <table className="rf-table">
                                     <thead style={{ background: '#f9fafb', borderBottom: '2px solid #e5e7eb' }}>
@@ -1573,7 +1573,7 @@
                                                 <td style={{ color: '#6b7280' }}>{item.team}</td>
                                                 <td style={{ textAlign: 'right', color: '#6b7280' }}>{formatStatValue(risersFallersStat, item.value2025)}</td>
                                                 <td style={{ textAlign: 'right', color: '#1f2937', fontWeight: 600 }}>{formatStatValue(risersFallersStat, item.value2026)}</td>
-                                                <td style={{ textAlign: 'right', color: '#059669', fontWeight: 600 }}>+{item.value2025 !== 0 ? ((item.change / item.value2025) * 100).toFixed(1) : '0.0'}%</td>
+                                                <td style={{ textAlign: 'right', color: risersFallersStat === 'SO%' ? '#dc2626' : '#059669', fontWeight: 600 }}>+{item.value2025 !== 0 ? ((item.change / item.value2025) * 100).toFixed(1) : '0.0'}%</td>
                                             </tr>
                                         ))}
                                     </tbody>
@@ -1582,8 +1582,8 @@
 
                             {/* Fallers Column */}
                             <div>
-                                <h2 style={{ fontSize: '1.25rem', fontWeight: 'bold', color: '#dc2626', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                    <span style={{ fontSize: '1.5rem' }}>📉</span> Biggest Fallers
+                                <h2 style={{ fontSize: '1.25rem', fontWeight: 'bold', color: risersFallersStat === 'SO%' ? '#059669' : '#dc2626', marginBottom: '1rem' }}>
+                                    Biggest Fallers
                                 </h2>
                                 <table className="rf-table">
                                     <thead style={{ background: '#f9fafb', borderBottom: '2px solid #e5e7eb' }}>
@@ -1602,7 +1602,7 @@
                                                 <td style={{ color: '#6b7280' }}>{item.team}</td>
                                                 <td style={{ textAlign: 'right', color: '#6b7280' }}>{formatStatValue(risersFallersStat, item.value2025)}</td>
                                                 <td style={{ textAlign: 'right', color: '#1f2937', fontWeight: 600 }}>{formatStatValue(risersFallersStat, item.value2026)}</td>
-                                                <td style={{ textAlign: 'right', color: '#dc2626', fontWeight: 600 }}>{item.value2025 !== 0 ? ((item.change / item.value2025) * 100).toFixed(1) : '0.0'}%</td>
+                                                <td style={{ textAlign: 'right', color: risersFallersStat === 'SO%' ? '#059669' : '#dc2626', fontWeight: 600 }}>{item.value2025 !== 0 ? ((item.change / item.value2025) * 100).toFixed(1) : '0.0'}%</td>
                                             </tr>
                                         ))}
                                     </tbody>
