@@ -1573,7 +1573,7 @@
                                                 <td style={{ color: '#6b7280' }}>{item.team}</td>
                                                 <td style={{ textAlign: 'right', color: '#6b7280' }}>{formatStatValue(risersFallersStat, item.value2025)}</td>
                                                 <td style={{ textAlign: 'right', color: '#1f2937', fontWeight: 600 }}>{formatStatValue(risersFallersStat, item.value2026)}</td>
-                                                <td style={{ textAlign: 'right', color: risersFallersStat === 'SO%' ? '#dc2626' : '#059669', fontWeight: 600 }}>+{item.value2025 !== 0 ? ((item.change / item.value2025) * 100).toFixed(1) : '0.0'}%</td>
+                                                <td style={{ textAlign: 'right', color: risersFallersStat === 'SO%' ? '#dc2626' : '#059669', fontWeight: 600 }}>+{formatStatValue(risersFallersStat, item.change)}</td>
                                             </tr>
                                         ))}
                                     </tbody>
@@ -1602,7 +1602,7 @@
                                                 <td style={{ color: '#6b7280' }}>{item.team}</td>
                                                 <td style={{ textAlign: 'right', color: '#6b7280' }}>{formatStatValue(risersFallersStat, item.value2025)}</td>
                                                 <td style={{ textAlign: 'right', color: '#1f2937', fontWeight: 600 }}>{formatStatValue(risersFallersStat, item.value2026)}</td>
-                                                <td style={{ textAlign: 'right', color: risersFallersStat === 'SO%' ? '#059669' : '#dc2626', fontWeight: 600 }}>{item.value2025 !== 0 ? ((item.change / item.value2025) * 100).toFixed(1) : '0.0'}%</td>
+                                                <td style={{ textAlign: 'right', color: risersFallersStat === 'SO%' ? '#059669' : '#dc2626', fontWeight: 600 }}>{formatStatValue(risersFallersStat, item.change)}</td>
                                             </tr>
                                         ))}
                                     </tbody>
@@ -1666,7 +1666,6 @@
                                                     const val2026 = selectedRiserFaller.player2026Data[stat];
                                                     if (typeof val2025 !== 'number' || typeof val2026 !== 'number') return null;
                                                     const change = val2026 - val2025;
-                                                    const pctChange = val2025 !== 0 ? ((change / val2025) * 100) : 0;
                                                     // SO% is inverted: decrease is good (green), increase is bad (red)
                                                     const changeColor = stat === 'SO%' 
                                                         ? (change <= 0 ? '#059669' : '#dc2626')
@@ -1678,7 +1677,7 @@
                                                             <td style={{ padding: '0.75rem', textAlign: 'right', color: '#6b7280' }}>{formatStatValue(stat, val2025)}</td>
                                                             <td style={{ padding: '0.75rem', textAlign: 'right', color: '#1f2937' }}>{formatStatValue(stat, val2026)}</td>
                                                             <td style={{ padding: '0.75rem', textAlign: 'right', color: changeColor, fontWeight: 600 }}>
-                                                                {change >= 0 ? '+' : ''}{pctChange.toFixed(1)}%
+                                                                {change >= 0 ? '+' : ''}{formatStatValue(stat, change)}
                                                             </td>
                                                         </tr>
                                                     );
@@ -1705,14 +1704,13 @@
                                                     const val2026 = selectedRiserFaller.player2026Data[stat];
                                                     if (typeof val2025 !== 'number' || typeof val2026 !== 'number') return null;
                                                     const change = val2026 - val2025;
-                                                    const pctChange = val2025 !== 0 ? ((change / val2025) * 100) : 0;
                                                     return (
                                                         <tr key={stat} style={{ borderBottom: '1px solid #e5e7eb' }}>
                                                             <td style={{ padding: '0.75rem', fontWeight: 600 }}>{stat}</td>
                                                             <td style={{ padding: '0.75rem', textAlign: 'right', color: '#6b7280' }}>{formatStatValue(stat, val2025)}</td>
                                                             <td style={{ padding: '0.75rem', textAlign: 'right', color: '#1f2937' }}>{formatStatValue(stat, val2026)}</td>
                                                             <td style={{ padding: '0.75rem', textAlign: 'right', color: change >= 0 ? '#059669' : '#dc2626', fontWeight: 600 }}>
-                                                                {change >= 0 ? '+' : ''}{pctChange.toFixed(1)}%
+                                                                {change >= 0 ? '+' : ''}{formatStatValue(stat, change)}
                                                             </td>
                                                         </tr>
                                                     );
